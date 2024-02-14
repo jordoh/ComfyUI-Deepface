@@ -46,12 +46,10 @@ class DeepfaceExtractFacesNode:
                 face_image = comfy_image_from_deepface_image(detected_face["face"])
                 output_images.append(face_image)
 
-        if len(output_images) > 1:
-            output_image = torch.cat(output_images, dim=0)
+        if len(output_images) > 0:
+            return (torch.cat(output_images, dim=0),)
         else:
-            output_image = output_images[0]
-
-        return (output_image,)
+            return ((),)
 
 class DeepfaceVerifyNode:
     def __init__(self):
@@ -136,7 +134,10 @@ class DeepfaceVerifyNode:
         output_images_with_distances.sort(key=lambda row: row[1])
         output_images = [row[0] for row in output_images_with_distances]
 
-        return (torch.stack(output_images, dim=0),)
+        if len(output_images) > 0:
+            return (torch.stack(output_images, dim=0),)
+        else:
+            return ((),)
 
 NODE_CLASS_MAPPINGS = {
     "DeepfaceExtractFaces": DeepfaceExtractFacesNode,
