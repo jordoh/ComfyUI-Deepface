@@ -20,7 +20,7 @@ class DeepfacePrepareNode:
         }
  
     RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ()
+    RETURN_NAMES = ("face_images",)
  
     FUNCTION = "run"
  
@@ -32,6 +32,7 @@ class DeepfacePrepareNode:
         full_output_folder, filename, counter, subfolder, filename_prefix = folder_paths.get_save_image_path(
             "deepface", folder_paths.get_temp_directory(), images[0].shape[1], images[0].shape[0]
         )
+        target_face_size = (224, 224)
         output_images = []
         for image in images:
             i = 255. * image.cpu().numpy()
@@ -41,24 +42,20 @@ class DeepfacePrepareNode:
             full_path = os.path.join(full_output_folder, file)
             image.save(full_path, compress_level=4)
 
-            image = image.convert("RGB")
-            image = np.array(image).astype(np.float32) / 255.0
-            image = torch.from_numpy(image)[None,]
-
-            detected_faces = DeepFace.extract_faces(full_path, detector_backend="retinaface")
-            output_images.append(image)
+            detected_faces = DeepFace.extract_faces(full_path, detector_backend="retinaface", target_size=target_face_size)
 
             for detected_face in detected_faces:
-                print(detected_face["confidence"])
-                face_temp = detected_face["face"][:, :, ::-1]
-                face_temp = face_temp * 255
+                # print(detected_face["confidence"])
                 full_face_image_path = os.path.join(full_output_folder, f"{filename}_{counter:05}_face.png")
-                cv2.imwrite(full_face_image_path, face_temp)
-                print("Detected face saved in:", full_face_image_path)
+                face_image = Image.fromarray(np.uint8(detected_face["face"] * 255))
+                face_image.save(full_face_image_path)
+
+                image = np.array(face_image).astype(np.float32) / 255.0
+                image = torch.from_numpy(image)[None,]
+                output_images.append(image)
 
             counter += 1
 
-        print(f"Saved {len(output_images)}")
         if len(output_images) > 1:
             output_image = torch.cat(output_images, dim=0)
         else:
