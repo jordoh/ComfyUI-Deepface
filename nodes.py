@@ -69,7 +69,33 @@ class DeepfaceVerifyNode:
                     "minimum": 0.0,
                     "maximum": 1.0,
                     "step": 0.01,
-                })
+                }),
+                "detector_backend": ([
+                     "opencv",
+                     "ssd",
+                     "dlib",
+                     "mtcnn",
+                     "retinaface",
+                     "mediapipe",
+                     "yolov8",
+                     "yunet",
+                     "fastmtcnn",
+                ], {
+                    "default": "retinaface",
+                }),
+                "model_name": ([
+                     "VGG-Face",
+                     "Facenet",
+                     "Facenet512",
+                     "OpenFace",
+                     "DeepFace",
+                     "DeepID",
+                     "ArcFace",
+                     "Dlib",
+                     "SFace",
+                ], {
+                    "default": "Facenet512",
+                }),
             },
         }
 
@@ -80,10 +106,7 @@ class DeepfaceVerifyNode:
 
     CATEGORY = "deepface"
 
-    def run(self, images, face_images, threshold):
-        detector_backend = "retinaface"
-        model_name = "Facenet512"
-
+    def run(self, images, face_images, threshold, detector_backend, model_name):
         deepface_face_images = []
         for face_image in face_images:
             deepface_face_images.append(deepface_image_from_comfy_image(face_image))
