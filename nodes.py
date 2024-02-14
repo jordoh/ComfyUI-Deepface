@@ -30,7 +30,7 @@ class DeepfaceExtractFacesNode:
  
     #OUTPUT_NODE = False
  
-    CATEGORY = "deepface/prepare"
+    CATEGORY = "deepface"
  
     def run(self, images):
         target_face_size = (224, 224)
@@ -78,7 +78,7 @@ class DeepfaceVerifyNode:
 
     FUNCTION = "run"
 
-    CATEGORY = "deepface/verify"
+    CATEGORY = "deepface"
 
     def run(self, images, face_images, threshold):
         detector_backend = "retinaface"
