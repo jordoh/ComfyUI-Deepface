@@ -11,7 +11,7 @@ def deepface_image_from_comfy_image(comfy_image):
     image_data = np.clip(255 * comfy_image.cpu().numpy(), 0, 255).astype(np.uint8)
     return image_data[:, :, ::-1]  # Convert RGB to BGR
 
-class DeepfacePrepareNode:
+class DeepfaceExtractFacesNode:
     def __init__(self):
         pass
     
@@ -68,7 +68,7 @@ class DeepfaceVerifyNode:
                     "display": "number",
                     "minimum": 0.0,
                     "maximum": 1.0,
-                    "step": 0.1,
+                    "step": 0.01,
                 })
             },
         }
@@ -77,8 +77,6 @@ class DeepfaceVerifyNode:
     RETURN_NAMES = ("verified_images",)
 
     FUNCTION = "run"
-
-    # OUTPUT_NODE = False
 
     CATEGORY = "deepface/verify"
 
@@ -118,11 +116,11 @@ class DeepfaceVerifyNode:
         return (torch.stack(output_images, dim=0),)
 
 NODE_CLASS_MAPPINGS = {
-    "DeepfacePrepare": DeepfacePrepareNode,
+    "DeepfaceExtractFaces": DeepfaceExtractFacesNode,
     "DeepfaceVerify": DeepfaceVerifyNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "DeepfacePrepare": "Deepface Prepare",
+    "DeepfaceExtractFaces": "Deepface Extract Faces",
     "DeepfaceVerify": "Deepface Verify",
 }
