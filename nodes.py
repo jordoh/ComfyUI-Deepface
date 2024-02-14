@@ -82,39 +82,35 @@ class DeepfaceVerifyNode:
     CATEGORY = "deepface/verify"
 
     def run(self, images, face_images, threshold):
+        detector_backend = "retinaface"
         model_name = "Facenet512"
 
         deepface_face_images = []
         for face_image in face_images:
             deepface_face_images.append(deepface_image_from_comfy_image(face_image))
 
-        verified_images = []
+        output_images_with_distances = []
         for image in images:
-            verified_images.append(image)
+            print("Deepface verify")
+
             comparison_image = deepface_image_from_comfy_image(image)
 
-            avg_distance = 0
-
-            is_verified = False
-            org_img_counter = 1
+            face_image_counter = 1
+            total_distance = 0
             for deepface_face_image in deepface_face_images:
-                result = DeepFace.verify(deepface_face_image, comparison_image, detector_backend="retinaface", model_name=model_name)
-                distance_score = result["distance"]
+                result = DeepFace.verify(deepface_face_image, comparison_image, detector_backend=detector_backend, model_name=model_name)
+                distance = result["distance"]
 
-                print(f"Distance of AI image to org image #{org_img_counter}: {distance_score} ({result['verified']})")
-                avg_distance = avg_distance + distance_score
-                org_img_counter = org_img_counter + 1
+                print(f"  Distance to face image #{face_image_counter}: {distance} ({result['verified']})")
+                face_image_counter += 1
+                total_distance += distance
 
-                if result['verified']:
-                    is_verified = True
-            #     distance_score = avg_distance / len(org_images)
-            #     distance_scores.append((generated_image_file, distance_score))
-            #     print(f"AI image {counter} / {len(image_files)} - {distance_score}")
+            average_distance = total_distance / len(deepface_face_images)
+            print(f"Average distance: {average_distance}")
+            if average_distance <= threshold:
+                output_images_with_distances.append(image)
 
-            # if is_verified:
-            #     verified_images.append(comfy_image_from_deepface_image(comparison_image))
-
-        return (torch.stack(verified_images, dim=0),)
+        return (torch.stack(output_images_with_distances, dim=0),)
 
 NODE_CLASS_MAPPINGS = {
     "DeepfacePrepare": DeepfacePrepareNode,
