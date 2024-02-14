@@ -68,6 +68,7 @@ class DeepfaceVerifyNode:
                     "display": "number",
                     "minimum": 0.0,
                     "maximum": 1.0,
+                    "step": 0.1,
                 })
             },
         }
@@ -98,9 +99,10 @@ class DeepfaceVerifyNode:
             face_image_counter = 1
             total_distance = 0
             for deepface_face_image in deepface_face_images:
-                result = DeepFace.verify(deepface_face_image, comparison_image, detector_backend=detector_backend, model_name=model_name)
+                result = DeepFace.verify(
+                    deepface_face_image, comparison_image, detector_backend=detector_backend, model_name=model_name
+                )
                 distance = result["distance"]
-
                 print(f"  Distance to face image #{face_image_counter}: {distance} ({result['verified']})")
                 face_image_counter += 1
                 total_distance += distance
@@ -108,9 +110,12 @@ class DeepfaceVerifyNode:
             average_distance = total_distance / len(deepface_face_images)
             print(f"Average distance: {average_distance}")
             if average_distance <= threshold:
-                output_images_with_distances.append(image)
+                output_images_with_distances.append((image, average_distance))
 
-        return (torch.stack(output_images_with_distances, dim=0),)
+        output_images_with_distances.sort(key=lambda row: row[1])
+        output_images = [row[0] for row in output_images_with_distances]
+
+        return (torch.stack(output_images, dim=0),)
 
 NODE_CLASS_MAPPINGS = {
     "DeepfacePrepare": DeepfacePrepareNode,
