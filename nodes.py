@@ -28,8 +28,6 @@ class DeepfaceExtractFacesNode:
  
     FUNCTION = "run"
  
-    #OUTPUT_NODE = False
- 
     CATEGORY = "deepface"
  
     def run(self, images):
@@ -39,7 +37,12 @@ class DeepfaceExtractFacesNode:
         for image in images:
             image = deepface_image_from_comfy_image(image)
 
-            detected_faces = DeepFace.extract_faces(image, detector_backend="retinaface", enforce_detection=False, target_size=target_face_size)
+            detected_faces = DeepFace.extract_faces(
+                image,
+                detector_backend="retinaface",
+                enforce_detection=False,
+                target_size=target_face_size,
+            )
 
             for detected_face in detected_faces:
                 # print(detected_face["confidence"])
@@ -119,7 +122,11 @@ class DeepfaceVerifyNode:
             total_distance = 0
             for deepface_reference_image in deepface_reference_images:
                 result = DeepFace.verify(
-                    deepface_reference_image, comparison_image, detector_backend=detector_backend, model_name=model_name
+                    deepface_reference_image,
+                    comparison_image,
+                    detector_backend=detector_backend,
+                    enforce_detection=False,
+                    model_name=model_name
                 )
                 distance = result["distance"]
                 print(f"  Distance to face image #{reference_image_counter}: {distance} ({result['verified']})")
