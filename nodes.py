@@ -46,13 +46,9 @@ class DeepfacePrepareNode:
 
             for detected_face in detected_faces:
                 # print(detected_face["confidence"])
-                full_face_image_path = os.path.join(full_output_folder, f"{filename}_{counter:05}_face.png")
-                face_image = Image.fromarray(np.uint8(detected_face["face"] * 255))
-                face_image.save(full_face_image_path)
-
-                image = np.array(face_image).astype(np.float32) / 255.0
-                image = torch.from_numpy(image)[None,]
-                output_images.append(image)
+                face_image = np.array(detected_face["face"]).astype(np.float32)
+                face_image = torch.from_numpy(face_image)[None,]
+                output_images.append(face_image)
 
             counter += 1
 
