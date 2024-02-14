@@ -60,7 +60,7 @@ class DeepfaceVerifyNode:
         return {
             "required": {
                 "images": ("IMAGE",),
-                "face_images": ("IMAGE",),
+                "reference_images": ("IMAGE",),
                 "threshold": ("FLOAT", {
                     "default": 0.3,
                     "display": "number",
@@ -104,10 +104,10 @@ class DeepfaceVerifyNode:
 
     CATEGORY = "deepface"
 
-    def run(self, images, face_images, threshold, detector_backend, model_name):
-        deepface_face_images = []
-        for face_image in face_images:
-            deepface_face_images.append(deepface_image_from_comfy_image(face_image))
+    def run(self, images, reference_images, threshold, detector_backend, model_name):
+        deepface_reference_images = []
+        for reference_image in reference_images:
+            deepface_reference_images.append(deepface_image_from_comfy_image(reference_image))
 
         output_images_with_distances = []
         for image in images:
@@ -115,18 +115,18 @@ class DeepfaceVerifyNode:
 
             comparison_image = deepface_image_from_comfy_image(image)
 
-            face_image_counter = 1
+            reference_image_counter = 1
             total_distance = 0
-            for deepface_face_image in deepface_face_images:
+            for deepface_reference_image in deepface_reference_images:
                 result = DeepFace.verify(
-                    deepface_face_image, comparison_image, detector_backend=detector_backend, model_name=model_name
+                    deepface_reference_image, comparison_image, detector_backend=detector_backend, model_name=model_name
                 )
                 distance = result["distance"]
-                print(f"  Distance to face image #{face_image_counter}: {distance} ({result['verified']})")
-                face_image_counter += 1
+                print(f"  Distance to face image #{reference_image_counter}: {distance} ({result['verified']})")
+                reference_image_counter += 1
                 total_distance += distance
 
-            average_distance = total_distance / len(deepface_face_images)
+            average_distance = total_distance / len(deepface_reference_images)
             print(f"Average distance: {average_distance}")
             if average_distance <= threshold:
                 output_images_with_distances.append((image, average_distance))
