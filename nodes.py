@@ -1,10 +1,15 @@
-import folder_paths
 import torch
-import os
 
 from deepface import DeepFace
 import numpy as np
-from PIL import Image
+
+def comfy_image_from_deepface_image(deepface_image):
+    image_data = np.array(deepface_image).astype(np.float32)
+    return torch.from_numpy(image_data)[None,]
+
+def deepface_image_from_comfy_image(comfy_image):
+    image_data = np.clip(255 * comfy_image.cpu().numpy(), 0, 255).astype(np.uint8)
+    return image_data[:, :, ::-1]  # Convert RGB to BGR
 
 class DeepfacePrepareNode:
     def __init__(self):
@@ -32,15 +37,13 @@ class DeepfacePrepareNode:
 
         output_images = []
         for image in images:
-            image_data = np.clip(255 * image.cpu().numpy(), 0, 255).astype(np.uint8)
-            image_data = image_data[:, :, ::-1]  # Convert RGB to BGR
+            image = deepface_image_from_comfy_image(image)
 
-            detected_faces = DeepFace.extract_faces(image_data, detector_backend="retinaface", enforce_detection=False, target_size=target_face_size)
+            detected_faces = DeepFace.extract_faces(image, detector_backend="retinaface", enforce_detection=False, target_size=target_face_size)
 
             for detected_face in detected_faces:
                 # print(detected_face["confidence"])
-                face_image = np.array(detected_face["face"]).astype(np.float32)
-                face_image = torch.from_numpy(face_image)[None,]
+                face_image = comfy_image_from_deepface_image(detected_face["face"])
                 output_images.append(face_image)
 
         if len(output_images) > 1:
@@ -60,6 +63,12 @@ class DeepfaceVerifyNode:
             "required": {
                 "images": ("IMAGE",),
                 "face_images": ("IMAGE",),
+                "threshold": ("FLOAT", {
+                    "default": 0.3,
+                    "display": "number",
+                    "minimum": 0.0,
+                    "maximum": 1.0,
+                })
             },
         }
 
@@ -72,41 +81,27 @@ class DeepfaceVerifyNode:
 
     CATEGORY = "deepface/verify"
 
-    def run(self, images, face_images):
+    def run(self, images, face_images, threshold):
         model_name = "Facenet512"
 
-        full_output_folder, filename, counter, subfolder, filename_prefix = folder_paths.get_save_image_path(
-            "deepface-verify", folder_paths.get_temp_directory(), images[0].shape[1], images[0].shape[0]
-        )
-
-        face_image_paths = []
+        deepface_face_images = []
         for face_image in face_images:
-            face_image = 255. * face_image.cpu().numpy()
-            face_image = Image.fromarray(np.clip(face_image, 0, 255).astype(np.uint8))
-
-            face_image_path = os.path.join(full_output_folder, f"{filename}_{counter:05}_.png")
-            face_image.save(face_image_path, compress_level=4)
-            face_image_paths.append(face_image_path)
-
-            counter += 1
+            deepface_face_images.append(deepface_image_from_comfy_image(face_image))
 
         verified_images = []
         for image in images:
-            comparison_image = 255. * image.cpu().numpy()
-            comparison_image = Image.fromarray(np.clip(comparison_image, 0, 255).astype(np.uint8))
-
-            image_path = os.path.join(full_output_folder, f"{filename}_{counter:05}_.png")
-            comparison_image.save(image_path, compress_level=4)
+            verified_images.append(image)
+            comparison_image = deepface_image_from_comfy_image(image)
 
             avg_distance = 0
 
             is_verified = False
             org_img_counter = 1
-            for face_image_path in face_image_paths:
-                result = DeepFace.verify(face_image_path, image_path, detector_backend="retinaface", model_name=model_name)
+            for deepface_face_image in deepface_face_images:
+                result = DeepFace.verify(deepface_face_image, comparison_image, detector_backend="retinaface", model_name=model_name)
                 distance_score = result["distance"]
 
-                print(f"Distance of AI image #{counter} to org image #{org_img_counter}: {distance_score} ({result['verified']})")
+                print(f"Distance of AI image to org image #{org_img_counter}: {distance_score} ({result['verified']})")
                 avg_distance = avg_distance + distance_score
                 org_img_counter = org_img_counter + 1
 
@@ -116,17 +111,10 @@ class DeepfaceVerifyNode:
             #     distance_scores.append((generated_image_file, distance_score))
             #     print(f"AI image {counter} / {len(image_files)} - {distance_score}")
 
-            if is_verified:
-                verified_images.append(image)
+            # if is_verified:
+            #     verified_images.append(comfy_image_from_deepface_image(comparison_image))
 
-            counter += 1
-
-        if len(verified_images) > 1:
-            output_image = torch.cat(verified_images, dim=0)
-        else:
-            output_image = verified_images[0]
-
-        return (output_image,)
+        return (torch.stack(verified_images, dim=0),)
 
 NODE_CLASS_MAPPINGS = {
     "DeepfacePrepare": DeepfacePrepareNode,
