@@ -11,6 +11,19 @@ def deepface_image_from_comfy_image(comfy_image):
     image_data = np.clip(255 * comfy_image.cpu().numpy(), 0, 255).astype(np.uint8)
     return image_data[:, :, ::-1]  # Convert RGB to BGR
 
+def result_from_images_with_distances(images_with_distances):
+    images_with_distances.sort(key=lambda row: row[1])
+    images = [row[0] for row in images_with_distances]
+    distances = [row[2] for row in images_with_distances]
+
+    if len(images) > 0:
+        return torch.stack(images, dim=0), distances
+    else:
+        # 64x64 black image, since it doesn't seem possible to output an empty batch of images that won't
+        # break a connected PreviewImage or SaveImage node
+        i = torch.full([1, 10, 10, 1], 0)
+        return torch.cat((i, i, i), dim=-1), distances
+
 class DeepfaceExtractFacesNode:
     def __init__(self):
         pass
@@ -100,8 +113,8 @@ class DeepfaceVerifyNode:
             },
         }
 
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("verified_images",)
+    RETURN_TYPES = ("IMAGE", "STRING", "IMAGE", "STRING",)
+    RETURN_NAMES = ("verified_images", "verified_image_distances", "rejected_images", "rejected_image_distances",)
 
     FUNCTION = "run"
 
@@ -112,7 +125,8 @@ class DeepfaceVerifyNode:
         for reference_image in reference_images:
             deepface_reference_images.append(deepface_image_from_comfy_image(reference_image))
 
-        output_images_with_distances = []
+        rejected_images_with_distances = []
+        verified_images_with_distances = []
         for image in images:
             print("Deepface verify")
 
@@ -135,16 +149,15 @@ class DeepfaceVerifyNode:
 
             average_distance = total_distance / len(deepface_reference_images)
             print(f"Average distance: {average_distance}")
-            if average_distance <= threshold:
-                output_images_with_distances.append((image, average_distance))
 
-        output_images_with_distances.sort(key=lambda row: row[1])
-        output_images = [row[0] for row in output_images_with_distances]
+            formatted_distance = "%.3f" % round(average_distance, 3)
 
-        if len(output_images) > 0:
-            return (torch.stack(output_images, dim=0),)
-        else:
-            return ((),)
+            if average_distance < threshold:
+                verified_images_with_distances.append((image, average_distance, formatted_distance))
+            else:
+                rejected_images_with_distances.append((image, average_distance, formatted_distance))
+
+        return result_from_images_with_distances(verified_images_with_distances) + result_from_images_with_distances(rejected_images_with_distances)
 
 NODE_CLASS_MAPPINGS = {
     "DeepfaceExtractFaces": DeepfaceExtractFacesNode,
