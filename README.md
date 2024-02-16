@@ -17,12 +17,22 @@ TODO: document
 
 ### Deepface Verify
 
-Given a set of input images and a set of reference images, only output the input images with an average distance to the
-set of reference images less than or equal to the specified threshold. Output images are sorted by average distance to 
-the reference images (nearest first). 
+Given a set of input images and a set of reference (face) images, only output the input images with an average distance
+to the faces in the reference images less than or equal to the specified threshold. Output images are sorted by average 
+distance to the reference image faces (nearest first).
+
+- Outputs:
+  - `verified_images` images that contain faces below the threshold, sorted from smallest distance to largest
+  - `verified_image_distances` numbers of the average distance from the input image face to each reference image face
+  - `rejected_images` images that contain faces above (or equal to) the threshold value for distance, sorted from smallest distance to largest
+  - `rejected_image_distances` numbers of the average distance from the input image face to each reference image face
 
 ![verify workflow](./workflows/verify.png)
 
+Nodes from [was-node-suite-comfyui](https://github.com/WASasquatch/was-node-suite-comfyui) and 
+[pythongosssss](https://github.com/pythongosssss/ComfyUI-Custom-Scripts) can be used to display the output distances:
+
+![verify with distances workflow](./workflows/verify-with-distances.png)
 
 # Credits
 
