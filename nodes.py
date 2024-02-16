@@ -14,7 +14,7 @@ def deepface_image_from_comfy_image(comfy_image):
 def result_from_images_with_distances(images_with_distances):
     images_with_distances.sort(key=lambda row: row[1])
     images = [row[0] for row in images_with_distances]
-    distances = [row[2] for row in images_with_distances]
+    distances = [row[1] for row in images_with_distances]
 
     if len(images) > 0:
         return torch.stack(images, dim=0), distances
@@ -113,7 +113,7 @@ class DeepfaceVerifyNode:
             },
         }
 
-    RETURN_TYPES = ("IMAGE", "STRING", "IMAGE", "STRING",)
+    RETURN_TYPES = ("IMAGE", "NUMBER", "IMAGE", "NUMBER",)
     RETURN_NAMES = ("verified_images", "verified_image_distances", "rejected_images", "rejected_image_distances",)
 
     FUNCTION = "run"
@@ -150,12 +150,10 @@ class DeepfaceVerifyNode:
             average_distance = total_distance / len(deepface_reference_images)
             print(f"Average distance: {average_distance}")
 
-            formatted_distance = "%.3f" % round(average_distance, 3)
-
             if average_distance < threshold:
-                verified_images_with_distances.append((image, average_distance, formatted_distance))
+                verified_images_with_distances.append((image, average_distance))
             else:
-                rejected_images_with_distances.append((image, average_distance, formatted_distance))
+                rejected_images_with_distances.append((image, average_distance))
 
         return result_from_images_with_distances(verified_images_with_distances) + result_from_images_with_distances(rejected_images_with_distances)
 
