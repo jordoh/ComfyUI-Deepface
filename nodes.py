@@ -2,6 +2,9 @@ import torch
 
 from deepface import DeepFace
 import numpy as np
+import os
+
+import folder_paths
 
 def comfy_image_from_deepface_image(deepface_image):
     image_data = np.array(deepface_image).astype(np.float32)
@@ -10,6 +13,17 @@ def comfy_image_from_deepface_image(deepface_image):
 def deepface_image_from_comfy_image(comfy_image):
     image_data = np.clip(255 * comfy_image.cpu().numpy(), 0, 255).astype(np.uint8)
     return image_data[:, :, ::-1]  # Convert RGB to BGR
+
+def prepare_deepface_home():
+    deepface_path = os.path.join(folder_paths.models_dir, "deepface")
+
+    # Deepface requires a specific structure within the DEEPFACE_HOME directory
+    deepface_dot_path = os.path.join(deepface_path, ".deepface")
+    deepface_weights_path = os.path.join(deepface_dot_path, "weights")
+    if not os.path.exists(deepface_weights_path):
+        os.makedirs(deepface_weights_path)
+
+    os.environ["DEEPFACE_HOME"] = deepface_path
 
 def result_from_images_with_distances(images_with_distances):
     images_with_distances.sort(key=lambda row: row[1])
@@ -26,6 +40,7 @@ def result_from_images_with_distances(images_with_distances):
 
 class DeepfaceExtractFacesNode:
     def __init__(self):
+        prepare_deepface_home()
         pass
     
     @classmethod
@@ -69,6 +84,7 @@ class DeepfaceExtractFacesNode:
 
 class DeepfaceVerifyNode:
     def __init__(self):
+        prepare_deepface_home()
         pass
 
     @classmethod
