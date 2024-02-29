@@ -25,18 +25,19 @@ def prepare_deepface_home():
 
     os.environ["DEEPFACE_HOME"] = deepface_path
 
-def result_from_images_with_distances(images_with_distances):
-    images_with_distances.sort(key=lambda row: row[1])
-    images = [row[0] for row in images_with_distances]
-    distances = [row[1] for row in images_with_distances]
+def result_from_images_with_distances(image_tuples):
+    image_tuples.sort(key=lambda row: row[1])
+    images = [row[0] for row in image_tuples]
+    distances = [row[1] for row in image_tuples]
+    verified_ratios = [row[2] for row in image_tuples]
 
     if len(images) > 0:
-        return torch.stack(images, dim=0), distances
+        return torch.stack(images, dim=0), distances, verified_ratios
     else:
         # 16x16 black image, since it doesn't seem possible to output an empty batch of images that won't
         # break a connected PreviewImage or SaveImage node
         i = torch.full([1, 16, 16, 1], 0, dtype=torch.float32)
-        return torch.cat((i, i, i), dim=-1), distances
+        return torch.cat((i, i, i), dim=-1), distances, verified_ratios
 
 class DeepfaceExtractFacesNode:
     def __init__(self):
@@ -129,8 +130,15 @@ class DeepfaceVerifyNode:
             },
         }
 
-    RETURN_TYPES = ("IMAGE", "NUMBER", "IMAGE", "NUMBER",)
-    RETURN_NAMES = ("verified_images", "verified_image_distances", "rejected_images", "rejected_image_distances",)
+    RETURN_TYPES = ("IMAGE", "NUMBER", "NUMBER", "IMAGE", "NUMBER", "NUMBER",)
+    RETURN_NAMES = (
+        "verified_images",
+        "verified_image_distances",
+        "verified_image_verified_ratios",
+        "rejected_images",
+        "rejected_image_distances",
+        "rejected_image_verified_ratios",
+    )
 
     FUNCTION = "run"
 
@@ -141,8 +149,8 @@ class DeepfaceVerifyNode:
         for reference_image in reference_images:
             deepface_reference_images.append(deepface_image_from_comfy_image(reference_image))
 
-        rejected_images_with_distances = []
-        verified_images_with_distances = []
+        rejected_image_tuples = []
+        verified_image_tuples = []
         for image in images:
             print("Deepface verify")
 
@@ -150,6 +158,7 @@ class DeepfaceVerifyNode:
 
             reference_image_counter = 1
             total_distance = 0
+            verified_images_count = 0
             for deepface_reference_image in deepface_reference_images:
                 result = DeepFace.verify(
                     deepface_reference_image,
@@ -159,19 +168,23 @@ class DeepfaceVerifyNode:
                     model_name=model_name
                 )
                 distance = result["distance"]
-                print(f"  Distance to face image #{reference_image_counter}: {distance} ({result['verified']})")
+                is_verified = result["verified"]
+                print(f"  Distance to face image #{reference_image_counter}: {distance} ({is_verified})")
                 reference_image_counter += 1
                 total_distance += distance
+                if is_verified:
+                    verified_images_count += 1
 
             average_distance = total_distance / len(deepface_reference_images)
-            print(f"Average distance: {average_distance}")
+            verified_ratio = round(verified_images_count / len(deepface_reference_images), 2)
+            print(f"Average distance: {average_distance} ({verified_ratio} verified)")
 
             if average_distance < threshold:
-                verified_images_with_distances.append((image, average_distance))
+                verified_image_tuples.append((image, average_distance, verified_ratio))
             else:
-                rejected_images_with_distances.append((image, average_distance))
+                rejected_image_tuples.append((image, average_distance, verified_ratio))
 
-        return result_from_images_with_distances(verified_images_with_distances) + result_from_images_with_distances(rejected_images_with_distances)
+        return result_from_images_with_distances(verified_image_tuples) + result_from_images_with_distances(rejected_image_tuples)
 
 NODE_CLASS_MAPPINGS = {
     "DeepfaceExtractFaces": DeepfaceExtractFacesNode,
