@@ -4,6 +4,7 @@ from deepface import DeepFace
 import numpy as np
 import os
 
+import comfy.utils
 import folder_paths
 
 def comfy_image_from_deepface_image(deepface_image):
@@ -149,10 +150,14 @@ class DeepfaceVerifyNode:
         for reference_image in reference_images:
             deepface_reference_images.append(deepface_image_from_comfy_image(reference_image))
 
+        total_steps = len(deepface_reference_images) * len(images)
+        progress_bar = comfy.utils.ProgressBar(total_steps)
+
         rejected_image_tuples = []
         verified_image_tuples = []
+        image_counter = 0
         for image in images:
-            print("Deepface verify")
+            print(f"Deepface verify { image_counter + 1 } / { len(images) }")
 
             comparison_image = deepface_image_from_comfy_image(image)
 
@@ -160,6 +165,8 @@ class DeepfaceVerifyNode:
             total_distance = 0
             verified_images_count = 0
             for deepface_reference_image in deepface_reference_images:
+                progress_bar.update(1)
+
                 result = DeepFace.verify(
                     deepface_reference_image,
                     comparison_image,
@@ -183,6 +190,8 @@ class DeepfaceVerifyNode:
                 verified_image_tuples.append((image, average_distance, verified_ratio))
             else:
                 rejected_image_tuples.append((image, average_distance, verified_ratio))
+
+            image_counter += 1
 
         return result_from_images_with_distances(verified_image_tuples) + result_from_images_with_distances(rejected_image_tuples)
 
