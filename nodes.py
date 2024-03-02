@@ -157,7 +157,7 @@ class DeepfaceVerifyNode:
         verified_image_tuples = []
         image_counter = 0
         for image in images:
-            print(f"Deepface verify { image_counter + 1 } / { len(images) }")
+            print(f"Deepface verify { image_counter + 1 }/{ len(images) }")
 
             comparison_image = deepface_image_from_comfy_image(image)
 
@@ -176,7 +176,7 @@ class DeepfaceVerifyNode:
                 )
                 distance = result["distance"]
                 is_verified = result["verified"]
-                print(f"  Distance to face image #{reference_image_counter}: {distance} ({is_verified})")
+                print(f"  Reference image { reference_image_counter }/{ len(reference_images) }: distance={ distance } verified={ is_verified }")
                 reference_image_counter += 1
                 total_distance += distance
                 if is_verified:
@@ -184,7 +184,7 @@ class DeepfaceVerifyNode:
 
             average_distance = total_distance / len(deepface_reference_images)
             verified_ratio = round(verified_images_count / len(deepface_reference_images), 2)
-            print(f"Average distance: {average_distance} ({verified_ratio} verified)")
+            print(f"Average distance: { average_distance } ({ verified_ratio } verified)")
 
             if average_distance < threshold:
                 verified_image_tuples.append((image, average_distance, verified_ratio))
