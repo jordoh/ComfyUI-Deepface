@@ -92,8 +92,15 @@ class DeepfaceVerifyNode:
             "required": {
                 "images": ("IMAGE",),
                 "reference_images": ("IMAGE",),
-                "threshold": ("FLOAT", {
-                    "default": 0.3,
+                "distance_threshold": ("FLOAT", {
+                    "default": 0.6,
+                    "display": "number",
+                    "minimum": 0.0,
+                    "maximum": 1.0,
+                    "step": 0.01,
+                }),
+                "ratio_threshold": ("FLOAT", {
+                    "default": 0.7,
                     "display": "number",
                     "minimum": 0.0,
                     "maximum": 1.0,
@@ -110,7 +117,7 @@ class DeepfaceVerifyNode:
                      "yunet",
                      "fastmtcnn",
                 ], {
-                    "default": "retinaface",
+                    "default": "ssd",
                 }),
                 "model_name": ([
                      "VGG-Face",
@@ -123,7 +130,7 @@ class DeepfaceVerifyNode:
                      "Dlib",
                      "SFace",
                 ], {
-                    "default": "Facenet512",
+                    "default": "VGG-Face",
                 }),
             },
         }
@@ -142,7 +149,7 @@ class DeepfaceVerifyNode:
 
     CATEGORY = "deepface"
 
-    def run(self, images, reference_images, threshold, detector_backend, model_name):
+    def run(self, images, reference_images, distance_threshold, ratio_threshold, detector_backend, model_name):
         deepface_reference_images = []
         for reference_image in reference_images:
             deepface_reference_images.append(deepface_image_from_comfy_image(reference_image))
@@ -183,7 +190,7 @@ class DeepfaceVerifyNode:
             verified_ratio = round(verified_images_count / len(deepface_reference_images), 2)
             print(f"Average distance: { average_distance } ({ verified_ratio } verified)")
 
-            if average_distance < threshold:
+            if average_distance < distance_threshold and verified_ratio > ratio_threshold:
                 verified_image_tuples.append((image, average_distance, verified_ratio))
             else:
                 rejected_image_tuples.append((image, average_distance, verified_ratio))
