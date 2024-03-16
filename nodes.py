@@ -35,10 +35,7 @@ def result_from_images_with_distances(image_tuples):
     if len(images) > 0:
         return torch.stack(images, dim=0), distances, verified_ratios
     else:
-        # 16x16 black image, since it doesn't seem possible to output an empty batch of images that won't
-        # break a connected PreviewImage or SaveImage node
-        i = torch.full([1, 16, 16, 1], 0, dtype=torch.float32)
-        return torch.cat((i, i, i), dim=-1), distances, verified_ratios
+        return (None, None, None,)
 
 class DeepfaceExtractFacesNode:
     def __init__(self):
