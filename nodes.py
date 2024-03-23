@@ -60,8 +60,12 @@ class DeepfaceExtractFacesNode:
     def run(self, images):
         target_face_size = (224, 224)
 
+        progress_bar = comfy.utils.ProgressBar(len(images))
+
         output_images = []
         for image in images:
+            progress_bar.update(1)
+
             image = deepface_image_from_comfy_image(image)
 
             detected_faces = DeepFace.extract_faces(
