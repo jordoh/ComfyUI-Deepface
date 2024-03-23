@@ -171,13 +171,19 @@ class DeepfaceVerifyNode:
             for deepface_reference_image in deepface_reference_images:
                 progress_bar.update(1)
 
-                result = DeepFace.verify(
-                    deepface_reference_image,
-                    comparison_image,
-                    detector_backend=detector_backend,
-                    enforce_detection=False,
-                    model_name=model_name
-                )
+                result = None
+                try:
+                    result = DeepFace.verify(
+                        deepface_reference_image,
+                        comparison_image,
+                        detector_backend=detector_backend,
+                        enforce_detection=False,
+                        model_name=model_name
+                    )
+                except ValueError as e:
+                    print(f"  Reference image { reference_image_counter }/{ len(reference_images) }: ERROR: { e }")
+                    continue
+
                 distance = result["distance"]
                 is_verified = result["verified"]
                 print(f"  Reference image { reference_image_counter }/{ len(reference_images) }: distance={ distance } verified={ is_verified }")
