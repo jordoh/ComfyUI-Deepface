@@ -1,0 +1,15 @@
+[project]
+name = "comfyui-deepface"
+description = "ComfyUI nodes wrapping the [a/deepface](https://github.com/serengil/deepface) library."
+version = "1.0.0"
+license = "LICENSE"
+dependencies = ["deepface"]
+
+[project.urls]
+Repository = "https://github.com/jordoh/ComfyUI-Deepface"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = "jordoh"
+DisplayName = "ComfyUI-Deepface"
+Icon = ""
