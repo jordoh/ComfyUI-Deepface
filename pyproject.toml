@@ -10,6 +10,6 @@ Repository = "https://github.com/jordoh/ComfyUI-Deepface"
 #  Used by Comfy Registry https://comfyregistry.org
 
 [tool.comfy]
-PublisherId = ""
+PublisherId = "jordoh"
 DisplayName = "ComfyUI-Deepface"
 Icon = ""
