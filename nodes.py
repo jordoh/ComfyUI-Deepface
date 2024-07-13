@@ -200,7 +200,7 @@ class DeepfaceVerifyNode:
             verified_ratio = round(verified_images_count / len(deepface_reference_images), 2)
             print(f"Average distance: { average_distance } ({ verified_ratio } verified)")
 
-            if average_distance < distance_threshold and verified_ratio > ratio_threshold:
+            if average_distance < distance_threshold and verified_ratio >= ratio_threshold:
                 verified_image_tuples.append((image, average_distance, verified_ratio))
             else:
                 rejected_image_tuples.append((image, average_distance, verified_ratio))
