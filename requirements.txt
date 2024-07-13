@@ -1,1 +1,1 @@
-deepface
+deepface==0.0.89
