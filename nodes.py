@@ -27,7 +27,7 @@ def prepare_deepface_home():
     os.environ["DEEPFACE_HOME"] = deepface_path
 
 def result_from_images_with_measurements(images_with_measurements, sort_by):
-    images_with_measurements.sort(key=lambda row: row[1] if sort_by == "distance" else -row[2])
+    images_with_measurements.sort(key=lambda row: row[1] if sort_by == "distance" else (-row[2], row[1]))
 
     images = [row[0] for row in images_with_measurements]
     distances = [row[1] for row in images_with_measurements]
