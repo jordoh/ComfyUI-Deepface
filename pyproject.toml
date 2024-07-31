@@ -2,7 +2,7 @@
 name = "comfyui-deepface"
 description = "ComfyUI nodes wrapping the [a/deepface](https://github.com/serengil/deepface) library."
 version = "1.0.0"
-license = "LICENSE"
+license = { file = "LICENSE" }
 dependencies = ["deepface"]
 
 [project.urls]
