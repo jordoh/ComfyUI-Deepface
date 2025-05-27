@@ -216,12 +216,57 @@ class DeepfaceVerifyNode:
 
         return result_from_images_with_measurements(verified_image_tuples, sort_by) + result_from_images_with_measurements(rejected_image_tuples, sort_by)
 
+class DeepfaceAnalyzeNode:
+    def __init__(self):
+        prepare_deepface_home()
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "images": ("IMAGE",),
+                "actions": (["age", "gender", "race", "emotion"], {
+                    "default": ["age", "gender", "race", "emotion"],
+                    "multiselect": True
+                }),
+                "detector_backend": ([
+                    "opencv", "ssd", "dlib", "mtcnn", "retinaface", "mediapipe", "yolov8", "yunet", "fastmtcnn"
+                ], {
+                    "default": "retinaface",
+                }),
+            },
+        }
+
+    RETURN_TYPES = ("JSON",)
+    RETURN_NAMES = ("analysis_results",)
+    FUNCTION = "run"
+    CATEGORY = "deepface"
+
+    def run(self, images, actions, detector_backend):
+        results = []
+        for image in images:
+            np_image = deepface_image_from_comfy_image(image)
+            try:
+                analysis = DeepFace.analyze(
+                    np_image,
+                    actions=actions,
+                    detector_backend=detector_backend,
+                    enforce_detection=False
+                )
+                results.append(analysis)
+            except Exception as e:
+                results.append({"error": str(e)})
+        return (results,)
+
 NODE_CLASS_MAPPINGS = {
     "DeepfaceExtractFaces": DeepfaceExtractFacesNode,
     "DeepfaceVerify": DeepfaceVerifyNode,
+    "DeepfaceAnalyze": DeepfaceAnalyzeNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "DeepfaceExtractFaces": "Deepface Extract Faces",
     "DeepfaceVerify": "Deepface Verify",
+    "DeepfaceAnalyze": "Deepface Analyze",
 }
