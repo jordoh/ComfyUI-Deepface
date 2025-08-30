@@ -38,6 +38,26 @@ def result_from_images_with_measurements(images_with_measurements, sort_by):
     else:
         return (None, None, None,)
 
+class AverageListNode:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "numbers": ("NUMBER",)
+            }
+        }
+
+    RETURN_TYPES = ("FLOAT",)
+    FUNCTION = "average"
+
+    def average(self, numbers):
+        if not numbers:
+            return (0.0,)
+        return (sum(numbers) / len(numbers),)
+
 class DeepfaceExtractFacesNode:
     def __init__(self):
         prepare_deepface_home()
@@ -260,12 +280,14 @@ class DeepfaceAnalyzeNode:
         return (results,)
 
 NODE_CLASS_MAPPINGS = {
+    "AverageList": AverageListNode,
     "DeepfaceExtractFaces": DeepfaceExtractFacesNode,
     "DeepfaceVerify": DeepfaceVerifyNode,
     "DeepfaceAnalyze": DeepfaceAnalyzeNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
+    "AverageList": "Average List",
     "DeepfaceExtractFaces": "Deepface Extract Faces",
     "DeepfaceVerify": "Deepface Verify",
     "DeepfaceAnalyze": "Deepface Analyze",
