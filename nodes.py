@@ -68,18 +68,41 @@ class DeepfaceExtractFacesNode:
         return {
             "required": {
                 "images": ("IMAGE",),
+                "target_face_size": ("INT", {
+                    "default": 224,
+                    "min": 32,
+                    "max": 1024,
+                    "step": 32,
+                    "display": "number"
+                }),
+                "detector_backend": ([
+                    "opencv",
+                    "ssd",
+                    "dlib",
+                    "mtcnn",
+                    "retinaface",
+                    "mediapipe",
+                    "yolov8",
+                    "yunet",
+                    "fastmtcnn",
+                ], {
+                    "default": "retinaface",
+                }),
+                "enforce_detection": ("BOOLEAN", {
+                    "default": False,
+                }),
             },
         }
- 
+
     RETURN_TYPES = ("IMAGE",)
     RETURN_NAMES = ("face_images",)
- 
+
     FUNCTION = "run"
- 
+
     CATEGORY = "deepface"
- 
-    def run(self, images):
-        target_face_size = (224, 224)
+
+    def run(self, images, target_face_size, detector_backend, enforce_detection):
+        target_size = (target_face_size, target_face_size)
 
         progress_bar = comfy.utils.ProgressBar(len(images))
 
@@ -89,12 +112,15 @@ class DeepfaceExtractFacesNode:
 
             image = deepface_image_from_comfy_image(image)
 
-            detected_faces = DeepFace.extract_faces(
-                image,
-                detector_backend="retinaface",
-                enforce_detection=False,
-                target_size=target_face_size,
-            )
+            try:
+                detected_faces = DeepFace.extract_faces(
+                    image,
+                    detector_backend=detector_backend,
+                    enforce_detection=enforce_detection,
+                    target_size=target_size,
+                )
+            except ValueError:
+                detected_faces = []
 
             for detected_face in detected_faces:
                 # print(detected_face["confidence"])
@@ -104,7 +130,7 @@ class DeepfaceExtractFacesNode:
         if len(output_images) > 0:
             return (torch.cat(output_images, dim=0),)
         else:
-            return ((),)
+            return (None,)
 
 class DeepfaceVerifyNode:
     def __init__(self):

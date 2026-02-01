@@ -13,7 +13,19 @@ pip install -r requirements.txt
 
 ### Deepface Extract Faces
 
-TODO: document
+Given a set of input images, outputs the cropped detected faces from each image. Each image
+is resized to the target size. If no face is detected in the image, will output the original image, 
+resized to the target face size.
+
+- Inputs:
+  - `images`: The input images to extract faces from.
+  - `target_face_size`: The size (width and height) to resize the extracted faces to. Default is 224.
+  - `detector_backend`: The face detection backend to use. Options include "opencv", "ssd", "dlib", "mtcnn", "retinaface", "mediapipe", "yolov8", "yunet", "fastmtcnn". Default is "retinaface".
+  - `enforce_detection`: If true, the node will not output anything (`(None,)`) if no faces are detected. If false, it will output the original image resized to the target size if no face is detected. Default is false.
+
+- Outputs:
+  - `face_images` batch of cropped face images detected in the input images
+
 
 ### Deepface Verify
 
