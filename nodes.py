@@ -15,6 +15,17 @@ def deepface_image_from_comfy_image(comfy_image):
     image_data = np.clip(255 * comfy_image.cpu().numpy(), 0, 255).astype(np.uint8)
     return image_data[:, :, ::-1]  # Convert RGB to BGR
 
+def pad_deepface_image(deepface_image):
+    h, w = deepface_image.shape[:2]
+    pad = int(max(h, w) * 0.4)
+    padded = np.pad(
+        deepface_image,
+        ((pad, pad), (pad, pad), (0, 0)),
+        mode="constant",
+        constant_values=0,
+    )
+    return padded, pad
+
 def prepare_deepface_home():
     deepface_path = os.path.join(folder_paths.models_dir, "deepface")
 
@@ -224,10 +235,12 @@ class DeepfaceVerifyNode:
 
             comparison_image = deepface_image_from_comfy_image(image)
 
+            image_bbox = None
+            padding_attempted = False
+            padding_offset = 0
             reference_image_counter = 1
             total_distance = 0
             verified_images_count = 0
-            image_bbox = None
             for deepface_reference_image in deepface_reference_images:
                 progress_bar.update(1)
 
@@ -241,15 +254,36 @@ class DeepfaceVerifyNode:
                         model_name=model_name
                     )
                 except ValueError as e:
-                    print(f"  Reference image { reference_image_counter }/{ len(reference_images) }: ERROR: { e }")
-                    continue
+                    if padding_attempted:
+                        print(f"  Reference image { reference_image_counter }/{ len(reference_images) }: ERROR: { e }")
+                        continue
+
+                    # The input face may be too large to detect; pad it and retry
+                    padding_attempted = True
+                    padded_image, pad = pad_deepface_image(comparison_image)
+                    try:
+                        result = DeepFace.verify(
+                            deepface_reference_image,
+                            padded_image,
+                            detector_backend=detector_backend,
+                            enforce_detection=False,
+                            model_name=model_name
+                        )
+                    except ValueError as retry_error:
+                        print(f"  Reference image { reference_image_counter }/{ len(reference_images) }: ERROR (after padding retry): { retry_error }")
+                        continue
+
+                    # Padding worked: reuse the padded image for the rest of the comparisons
+                    print(f"  Reference image { reference_image_counter }/{ len(reference_images) }: retried with padding")
+                    comparison_image = padded_image
+                    padding_offset = pad
 
                 if image_bbox is None:
                     facial_area = result.get("facial_areas", {}).get("img2")
                     if facial_area is not None:
                         image_bbox = {
-                            "x": facial_area["x"],
-                            "y": facial_area["y"],
+                            "x": facial_area["x"] - padding_offset,
+                            "y": facial_area["y"] - padding_offset,
                             "width": facial_area["w"],
                             "height": facial_area["h"],
                         }
