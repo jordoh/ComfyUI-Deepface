@@ -192,7 +192,7 @@ class DeepfaceVerifyNode:
             },
         }
 
-    RETURN_TYPES = ("IMAGE", "NUMBER", "NUMBER", "IMAGE", "NUMBER", "NUMBER",)
+    RETURN_TYPES = ("IMAGE", "NUMBER", "NUMBER", "IMAGE", "NUMBER", "NUMBER", "BOUNDING_BOX",)
     RETURN_NAMES = (
         "verified_images",
         "verified_image_distances",
@@ -200,6 +200,7 @@ class DeepfaceVerifyNode:
         "rejected_images",
         "rejected_image_distances",
         "rejected_image_verified_ratios",
+        "bboxes",
     )
 
     FUNCTION = "run"
@@ -216,6 +217,7 @@ class DeepfaceVerifyNode:
 
         rejected_image_tuples = []
         verified_image_tuples = []
+        bboxes = []
         image_counter = 0
         for image in images:
             print(f"Deepface verify { image_counter + 1 }/{ len(images) }")
@@ -225,6 +227,7 @@ class DeepfaceVerifyNode:
             reference_image_counter = 1
             total_distance = 0
             verified_images_count = 0
+            image_bbox = None
             for deepface_reference_image in deepface_reference_images:
                 progress_bar.update(1)
 
@@ -240,6 +243,16 @@ class DeepfaceVerifyNode:
                 except ValueError as e:
                     print(f"  Reference image { reference_image_counter }/{ len(reference_images) }: ERROR: { e }")
                     continue
+
+                if image_bbox is None:
+                    facial_area = result.get("facial_areas", {}).get("img2")
+                    if facial_area is not None:
+                        image_bbox = {
+                            "x": facial_area["x"],
+                            "y": facial_area["y"],
+                            "width": facial_area["w"],
+                            "height": facial_area["h"],
+                        }
 
                 distance = result["distance"]
                 is_verified = result["verified"]
@@ -258,9 +271,14 @@ class DeepfaceVerifyNode:
             else:
                 rejected_image_tuples.append((image, average_distance, verified_ratio))
 
+            # Emit one frame of detections per image (in input order) so the
+            # bboxes line up with the corresponding `images` when drawn. A frame
+            # is an empty list when no face was detected for that image.
+            bboxes.append([image_bbox] if image_bbox is not None else [])
+
             image_counter += 1
 
-        return result_from_images_with_measurements(verified_image_tuples, sort_by) + result_from_images_with_measurements(rejected_image_tuples, sort_by)
+        return result_from_images_with_measurements(verified_image_tuples, sort_by) + result_from_images_with_measurements(rejected_image_tuples, sort_by) + (bboxes,)
 
 class DeepfaceAnalyzeNode:
     def __init__(self):
