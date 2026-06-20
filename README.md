@@ -47,6 +47,7 @@ Both inputs accept image batches.
   - `rejected_images` images that contain faces above (or equal to) the distance threshold or below the ratio threshold, sorted from smallest distance to largest
   - `rejected_image_distances` numbers of the average distance from the input image face to each reference image face
   - `rejected_image_verified_ratios` the ratio of reference images that deepface marks as "verified" to the total number of reference images
+  - `bboxes` the bounding box of the detected face region in each input image, in input order (one frame of detections per image)
 
 Note that any individual output may be `None` if there are no input images matching the criteria.
 
