@@ -13,6 +13,7 @@ def comfy_image_from_deepface_image(deepface_image):
 
 def deepface_image_from_comfy_image(comfy_image):
     image_data = np.clip(255 * comfy_image.cpu().numpy(), 0, 255).astype(np.uint8)
+    image_data = image_data[:, :, :3] # Ensure RGBA is reduced to RGB
     return image_data[:, :, ::-1]  # Convert RGB to BGR
 
 def pad_deepface_image(deepface_image):
